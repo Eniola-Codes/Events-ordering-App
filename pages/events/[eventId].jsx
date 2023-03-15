@@ -1,26 +1,22 @@
 import React from "react";
 import EventSummary from "../../components/event-detail/event-summary";
 import { useRouter } from "next/router";
-import { getEventById } from "../../dummy-data";
 import EventLogistics from "../../components/event-detail/event-logistics";
 import EventContent from "../../components/event-detail/event-content";
 import ErrorAlert from "../../components/error-alert/error-alert";
 import Button from "../../components/Ui/Button";
+import { getEventById, getAllPaths} from "../../helpers/api-utils";
 
-const EventDetails = () => {
+const EventDetails = ({event}) => {
   const router = useRouter();
 
   const eventId = router.query.eventId;
-  const event = getEventById(eventId);
 
   if (!event) {
     return (
-      <>
-        <ErrorAlert>
-          return <p>Theres no event.</p>;
-        </ErrorAlert>
-        <Button>Go Back</Button>
-      </>
+        <div className="center">
+          <p>Loading...</p>;
+        </div>
     );
   }
 
@@ -40,53 +36,27 @@ const EventDetails = () => {
 
 export default EventDetails;
 
-const getData = async () =>
-{
-  
-}
 
 export const getStaticProps = async (context) => {
   const { params } = context;
-
   const eventId = params.eventId;
-  console.log(eventId);
+
+  const eventDetails = await getEventById(eventId);
 
   return {
     props: {
-      event: "boy",
+      event: eventDetails,
     },
+    revalidate : 60
   };
 };
 
 export const getStaticPaths = async () => {
-  const response = await fetch(
-    "https://sales-c4869-default-rtdb.firebaseio.com/events.json"
-  );
 
-  const data = await response.json();
-
-  const transformedData = [];
-
-  for (let key in data) {
-    transformedData.push({
-      id: key,
-      title: data[key].title,
-      description: data[key].description,
-      location: data[key].title,
-      date: data[key].date,
-      image: data[key].image,
-      isFeatured: data[key].isFeatured,
-    });
-  }
-
-  const id = transformedData.map(item == item.id);
-
-  const pathWithParams = id.map((id) => ({
-    params: { eventId: id },
-  }));
+  const getPaths = await getAllPaths();
 
   return {
-    paths: pathWithParams,
-    fallback: false,
+    paths: getPaths,
+    fallback: true,
   };
 };

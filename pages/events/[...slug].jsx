@@ -1,27 +1,47 @@
 import React from "react";
 import { useRouter } from "next/router";
-import { getFeaturedEvents } from "../../dummy-data";
+import { getFilteredEvents } from "../../helpers/api-utils";
 import EventList from "../../components/EventList";
 import Button from "../../components/Ui/Button";
 import ResultTitle from "../../components/results-title/results-title";
 import ErrorAlert from "../../components/error-alert/error-alert";
 
-const FilteredEvents = () => {
+const FilteredEvents = (props) => {
   const router = useRouter();
 
-  const filteredData = router.query.slug;
-  if (!filteredData) {
-    return <p className="center">Loading...</p>;
+
+  if (props.hasError) {
+  return  <>
+    <ErrorAlert>
+     <p>There are no events in this category.</p>
+    </ErrorAlert>
+    <Button link="/events" className="center"> Go Back</Button>
+    </>
   }
+
+  const date = new Date(props.date.year, props.date.month - 1);
+
+  return (
+    <>
+      <ResultTitle date={date} />
+      <EventList items={props.events} />
+    </>
+  );
+};
+
+export default FilteredEvents;
+
+
+export const getServerSideProps = async (context) =>
+{
+  const {params} = context;
+  const filteredData = params.slug;
 
   const filteredYear = filteredData[0];
   const filteredMonth = filteredData[1];
 
   const numYear = +filteredYear;
   const numMonth = +filteredMonth;
-
-  console.log(numYear);
-  console.log(numMonth);
 
   if (
     isNaN(numYear) ||
@@ -31,38 +51,29 @@ const FilteredEvents = () => {
     numMonth < 1 ||
     numMonth > 12
   ) {
-    return (
-      <>
-        <p>Input a valid filter value</p>{" "}
-        <Button link="/events">Go Back</Button>
-      </>
-    );
+    return {props : {
+      hasError : true
+    }};
   }
 
-  const filteredEvents = getFeaturedEvents({
-    year: numYear,
-    month: numMonth,
-  });
-
-  console.log(filteredEvents);
+    const filteredEvents = await getFilteredEvents({
+      year: numYear,
+      month: numMonth,
+    });
 
   if (!filteredEvents || filteredEvents.length === 0) {
-    <>
-    <ErrorAlert>
-      return <p>There are no events in this category.</p>;
-    </ErrorAlert>
-    <Button>God Back</Button>
-    </>
+    return {
+      props : {hasError : true}
+    }
   }
 
-  const date = new Date(numYear, numMonth - 1);
-
-  return (
-    <>
-      <ResultTitle date={date} />
-      <EventList items={filteredEvents} />
-    </>
-  );
-};
-
-export default FilteredEvents;
+  return {
+    props : {
+      events : filteredEvents,
+      date : {
+        year : numYear,
+        month : numMonth,
+      }
+    }
+  }
+}

@@ -1,9 +1,8 @@
 import Head from "next/head";
 import EventList from "../components/EventList";
-import { getFeaturedEvents } from "../dummy-data";
+import { getFeaturedEvents } from "../helpers/api-utils";
 
 export default function Home({ featuredEvent }) {
-  const featuredEvents = getFeaturedEvents(featuredEvent);
 
   return (
     <div>
@@ -13,36 +12,19 @@ export default function Home({ featuredEvent }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div>
-        <EventList items={featuredEvents} />
+        <EventList items={featuredEvent} />
       </div>
     </div>
   );
 }
 
 export const getStaticProps = async () => {
-  const response = await fetch(
-    "https://sales-c4869-default-rtdb.firebaseio.com/events.json"
-  );
-
-  const data = await response.json();
-
-  const transformedData = [];
-
-  for (let key in data) {
-    transformedData.push({
-      id: key,
-      title: data[key].title,
-      description: data[key].description,
-      location: data[key].title,
-      date: data[key].date,
-      image: data[key].image,
-      isFeatured: data[key].isFeatured,
-    });
-  }
+  const events = await getFeaturedEvents();
 
   return {
     props: {
-      featuredEvent: transformedData,
+      featuredEvent: events,
     },
+    revalidate : 1800
   };
 };
